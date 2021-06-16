@@ -1,0 +1,7 @@
+__pycache__
+.idea
+*.txt
+*.raw
+*.id
+*.index
+.DS_Store
