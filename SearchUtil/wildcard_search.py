@@ -80,4 +80,4 @@ def wild_card(state, part):
         term_list_2 = prefix_match(permuterm, query_2)
         # print("term_list2 =", term_list_2)
         temp = bitwise_and(term_list_2, term_list_1)
-        return temp + ['SJTU']
+        return list(temp) + ['SJTU']

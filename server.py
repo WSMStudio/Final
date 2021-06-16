@@ -3,7 +3,7 @@ from flask import request
 from flask import render_template
 from flask import Response, json
 from gevent import pywsgi
-import re, pickle, datetime
+import pickle, datetime
 from SearchUtil.SPchecker import SPchecker
 from boolean_parser.parsers import Parser
 from SearchUtil import wildcard_search as wild
@@ -145,8 +145,14 @@ class Indexer:
 
 
 def prox_action(data):
-    q1 = data['q1']
-    q2 = data['q2']
+    q1 = data['q1'].replace('"', '').replace("'", "").lower()
+    tmp = checker.checker(q1)
+    if not (len(tmp) == 1 and tmp[0] == q1):
+        spell_hints[q1] = tmp
+    q2 = data['q2'].replace('"', '').replace("'", "").lower()
+    tmp = checker.checker(q2)
+    if not (len(tmp) == 1 and tmp[0] == q2):
+        spell_hints[q2] = tmp
     op = data['op']
     pre = 'order' in op
     where = op.get('type', 'D').upper()
@@ -170,11 +176,8 @@ def Action1(data):
         if not (len(tmp) == 1 and tmp[0] == value):
             spell_hints[value] = tmp
     elif 'prox' in dd:
-        value = dd['prox'].replace('"', '').replace("'", "").lower()
+        value = dd['prox']
         prox_action(value)
-        tmp = checker.checker(value)
-        if not (len(tmp) == 1 and tmp[0] == value):
-            spell_hints[value] = tmp
     return 'content', len(command['content']) - 1
 
 
@@ -221,7 +224,11 @@ def search():
     if "content" in command:
         for q1, q2, k, where, pre in command['content']:
             if not q2:
-                response_tmp.setdefault("content", []).append(indexer.search_general('content', q1))
+                if "*" in q1:
+                    for v in wild.wild_card('content', q1):
+                        response_tmp.setdefault('content', []).append(indexer.search_general('content', v))
+                else:
+                    response_tmp.setdefault("content", []).append(indexer.search_general('content', q1))
             else:
                 response_tmp.setdefault("content", []).append(indexer.search_content(q1, q2, k, where, pre))
     if "author" in command:
